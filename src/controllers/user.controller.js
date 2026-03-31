@@ -40,6 +40,12 @@ const createNewUser = async (req, res) => {
       isActive,
     });
 
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('user:created', user);
+      console.log('📡 Emitido user:created', user._id);
+    }
+
     return res.status(201).json({
       ok: true,
       message: 'Usuario creado correctamente',
@@ -57,6 +63,12 @@ const editUser = async (req, res) => {
   try {
     const user = await updateUser(req.params.id, req.body);
 
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('user:updated', user);
+      console.log('📡 Emitido user:updated', user._id);
+    }
+
     return res.json({
       ok: true,
       message: 'Usuario actualizado correctamente',
@@ -73,6 +85,12 @@ const editUser = async (req, res) => {
 const removeUser = async (req, res) => {
   try {
     await deleteUser(req.params.id);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('user:deleted', { id: req.params.id });
+      console.log('📡 Emitido user:deleted', req.params.id);
+    }
 
     return res.json({
       ok: true,

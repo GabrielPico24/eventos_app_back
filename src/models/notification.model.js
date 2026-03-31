@@ -2,34 +2,25 @@ const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema(
   {
-    title: {
+    title: { type: String, required: true },
+    message: { type: String, required: true },
+    type: {
       type: String,
-      required: true,
-      trim: true,
+      enum: ['info', 'success', 'warning', 'error'],
+      default: 'info',
     },
-    message: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    category: {
-      type: String,
-      default: 'General',
-    },
-    sendToAll: {
-      type: Boolean,
-      default: true,
-    },
-    recipients: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-      },
-    ],
-    createdBy: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      default: null,
+    },
+    read: {
+      type: Boolean,
+      default: false,
+    },
+    metadata: {
+      type: Object,
+      default: {},
     },
   },
   {

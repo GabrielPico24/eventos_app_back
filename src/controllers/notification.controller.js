@@ -1,47 +1,27 @@
-const {
-  getNotifications,
-  createNotification,
-} = require('../services/notification.service');
+const Notification = require('../models/notification.model');
 
-const listNotifications = async (req, res) => {
+async function getNotifications(req, res) {
   try {
-    const notifications = await getNotifications();
+    const notifications = await Notification.find({
+      $or: [
+        { userId: null },
+        { userId: req.user.id },
+      ],
+    }).sort({ createdAt: -1 });
 
     return res.json({
       ok: true,
       data: notifications,
     });
   } catch (error) {
+    console.error('❌ getNotifications error', error);
     return res.status(500).json({
       ok: false,
-      message: error.message,
+      message: 'Error al listar notificaciones',
     });
   }
-};
-
-const createNewNotification = async (req, res) => {
-  try {
-    const payload = {
-      ...req.body,
-      createdBy: req.user.id,
-    };
-
-    const notification = await createNotification(payload);
-
-    return res.status(201).json({
-      ok: true,
-      message: 'Notificación creada correctamente',
-      data: notification,
-    });
-  } catch (error) {
-    return res.status(400).json({
-      ok: false,
-      message: error.message,
-    });
-  }
-};
+}
 
 module.exports = {
-  listNotifications,
-  createNewNotification,
+  getNotifications,
 };

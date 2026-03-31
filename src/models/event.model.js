@@ -14,21 +14,18 @@ const eventSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: true,
+      default: '',
       trim: true,
     },
     date: {
       type: String,
       required: true,
+      trim: true,
     },
     time: {
       type: String,
       required: true,
-    },
-    slots: {
-      type: Number,
-      required: true,
-      min: 1,
+      trim: true,
     },
     isActive: {
       type: Boolean,

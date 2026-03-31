@@ -1,17 +1,17 @@
 const express = require('express');
+const { authMiddleware } = require('../middlewares/auth.middleware');
 const {
   listEvents,
   createNewEvent,
-  editEvent,
-  removeEvent,
+  updateExistingEvent,
+  deleteExistingEvent,
 } = require('../controllers/event.controller');
-const { authMiddleware, adminOnly } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
 router.get('/', authMiddleware, listEvents);
-router.post('/', authMiddleware, adminOnly, createNewEvent);
-router.put('/:id', authMiddleware, adminOnly, editEvent);
-router.delete('/:id', authMiddleware, adminOnly, removeEvent);
+router.post('/', authMiddleware, createNewEvent);
+router.put('/:id', authMiddleware, updateExistingEvent);
+router.delete('/:id', authMiddleware, deleteExistingEvent);
 
 module.exports = router;

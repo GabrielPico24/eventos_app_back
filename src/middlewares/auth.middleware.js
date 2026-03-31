@@ -1,18 +1,19 @@
 const jwt = require('jsonwebtoken');
+const { JWT_SECRET } = require('../config/env');
 
-const authMiddleware = (req, res, next) => {
+function authMiddleware(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization || '';
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         ok: false,
-        message: 'Token no proporcionado',
+        message: 'No autorizado',
       });
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const token = authHeader.replace('Bearer ', '');
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     req.user = decoded;
     next();
@@ -22,18 +23,32 @@ const authMiddleware = (req, res, next) => {
       message: 'Token inválido o expirado',
     });
   }
-};
+}
 
-const adminOnly = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({
+function adminOnly(req, res, next) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        ok: false,
+        message: 'No autorizado',
+      });
+    }
+
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        ok: false,
+        message: 'Acceso solo para administradores',
+      });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(500).json({
       ok: false,
-      message: 'Acceso solo para administradores',
+      message: 'Error al validar permisos',
     });
   }
-
-  next();
-};
+}
 
 module.exports = {
   authMiddleware,

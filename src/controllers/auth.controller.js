@@ -1,32 +1,63 @@
-const { loginUser } = require('../services/auth.service');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const User = require('../models/user.model');
+const { JWT_SECRET } = require('../config/env');
 
-const login = async (req, res) => {
+function generateToken(user) {
+  return jwt.sign(
+    {
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+}
+
+async function login(req, res) {
   try {
-    console.log('📥 BODY LOGIN:', req.body);
-
     const { email, password } = req.body;
-    const data = await loginUser({ email, password });
 
-    console.log('📤 RESPUESTA LOGIN:', JSON.stringify({
-      ok: true,
-      message: 'Login exitoso',
-      data,
-    }, null, 2));
+    const user = await User.findOne({ email, isActive: true });
 
-    return res.status(200).json({
+    if (!user) {
+      return res.status(401).json({
+        ok: false,
+        message: 'Credenciales inválidas',
+      });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (!isValidPassword) {
+      return res.status(401).json({
+        ok: false,
+        message: 'Credenciales inválidas',
+      });
+    }
+
+    const token = generateToken(user);
+
+    return res.json({
       ok: true,
-      message: 'Login exitoso',
-      data,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
-    console.log('❌ ERROR LOGIN:', error.message);
-
-    return res.status(400).json({
+    console.error('❌ login error', error);
+    return res.status(500).json({
       ok: false,
-      message: error.message,
+      message: 'Error interno del servidor',
     });
   }
-};
+}
 
 module.exports = {
   login,
