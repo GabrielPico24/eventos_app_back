@@ -7,7 +7,11 @@ const {
 
 async function listEvents(req, res) {
   try {
+    console.log('📥 HTTP GET /api/events -> listEvents');
+
     const events = await getEvents();
+
+    console.log('✅ Eventos obtenidos:', events.length);
 
     return res.json({
       ok: true,
@@ -24,10 +28,18 @@ async function listEvents(req, res) {
 
 async function createNewEvent(req, res) {
   try {
+    console.log('📥 HTTP POST /api/events -> createNewEvent');
+    console.log('📦 Body recibido:', req.body);
+
     const event = await createEvent(req.body);
 
+    console.log('✅ Evento creado en DB:', event._id?.toString());
+
     if (global.io) {
+      console.log('📡 SOCKET EMIT -> event:created', event._id?.toString());
       global.io.emit('event:created', event);
+    } else {
+      console.log('⚠️ global.io no está disponible para event:created');
     }
 
     return res.status(201).json({
@@ -46,10 +58,19 @@ async function createNewEvent(req, res) {
 
 async function updateExistingEvent(req, res) {
   try {
+    console.log('📥 HTTP PUT /api/events/:id -> updateExistingEvent');
+    console.log('🆔 ID recibido:', req.params.id);
+    console.log('📦 Body recibido:', req.body);
+
     const event = await updateEvent(req.params.id, req.body);
 
+    console.log('✅ Evento actualizado en DB:', event._id?.toString());
+
     if (global.io) {
+      console.log('📡 SOCKET EMIT -> event:updated', event._id?.toString());
       global.io.emit('event:updated', event);
+    } else {
+      console.log('⚠️ global.io no está disponible para event:updated');
     }
 
     return res.json({
@@ -72,12 +93,20 @@ async function updateExistingEvent(req, res) {
 
 async function deleteExistingEvent(req, res) {
   try {
+    console.log('📥 HTTP DELETE /api/events/:id -> deleteExistingEvent');
+    console.log('🆔 ID recibido:', req.params.id);
+
     await deleteEvent(req.params.id);
 
+    console.log('✅ Evento eliminado en DB:', req.params.id);
+
     if (global.io) {
+      console.log('📡 SOCKET EMIT -> event:deleted', req.params.id);
       global.io.emit('event:deleted', {
         id: req.params.id,
       });
+    } else {
+      console.log('⚠️ global.io no está disponible para event:deleted');
     }
 
     return res.json({

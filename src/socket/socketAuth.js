@@ -3,22 +3,15 @@ const { JWT_SECRET } = require('../config/env');
 
 function socketAuth(socket, next) {
   try {
-    console.log('🟠 socketAuth ejecutándose');
-
     const token =
       socket.handshake.auth?.token ||
       socket.handshake.headers?.authorization?.replace('Bearer ', '');
 
-    console.log('🟠 Token recibido en socket:', token ? 'SÍ' : 'NO');
-
     if (!token) {
-      console.log('❌ Socket sin token');
-      return next(new Error('Token requerido'));
+      return next(new Error('TOKEN_REQUIRED'));
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-
-    console.log('✅ Token socket válido:', decoded);
 
     socket.user = {
       id: decoded.id,
@@ -29,8 +22,11 @@ function socketAuth(socket, next) {
 
     next();
   } catch (error) {
-    console.log('❌ Error en socketAuth:', error.message);
-    next(new Error('Token inválido'));
+    if (error.name === 'TokenExpiredError') {
+      return next(new Error('TOKEN_EXPIRED'));
+    }
+
+    return next(new Error('TOKEN_INVALID'));
   }
 }
 
