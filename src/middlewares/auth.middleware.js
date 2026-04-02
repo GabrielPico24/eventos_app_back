@@ -12,10 +12,16 @@ function authMiddleware(req, res, next) {
       });
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace('Bearer ', '').trim();
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    req.user = decoded;
+    req.user = {
+      id: decoded.id,
+      name: decoded.name,
+      email: decoded.email,
+      role: decoded.role,
+    };
+
     next();
   } catch (error) {
     return res.status(401).json({

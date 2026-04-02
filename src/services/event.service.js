@@ -5,15 +5,27 @@ const Category = require('../models/category.model');
 const getEvents = async () => {
   return await Event.find()
     .populate('category')
+    .populate('createdBy', 'name email role')
     .sort({ createdAt: -1 });
 };
 
-const createEvent = async (payload) => {
+const getMyEvents = async (userId) => {
+  return await Event.find({ createdBy: userId })
+    .populate('category')
+    .populate('createdBy', 'name email role')
+    .sort({ createdAt: -1 });
+};
+
+const createEvent = async (payload, user) => {
   const title = payload.title?.trim();
   const description = payload.description?.trim();
-  const date = payload.date?.trim();
-  const time = payload.time?.trim();
+  const startDate = payload.startDate?.trim();
+  const endDate = payload.endDate?.trim();
+  const startTime = payload.startTime?.trim();
+  const endTime = payload.endTime?.trim();
+  const location = payload.location?.trim() || '';
   const categoryId = payload.category;
+  const categoryName = payload.categoryName?.trim();
 
   if (!title) {
     throw new Error('El título del evento es obligatorio');
@@ -32,31 +44,62 @@ const createEvent = async (payload) => {
     throw new Error('La descripción del evento es obligatoria');
   }
 
-  if (!date) {
-    throw new Error('La fecha del evento es obligatoria');
+  if (!startDate) {
+    throw new Error('La fecha de inicio es obligatoria');
   }
 
-  if (!time) {
-    throw new Error('La hora del evento es obligatoria');
+  if (!endDate) {
+    throw new Error('La fecha de fin es obligatoria');
+  }
+
+  if (!startTime) {
+    throw new Error('La hora de inicio es obligatoria');
+  }
+
+  if (!endTime) {
+    throw new Error('La hora de fin es obligatoria');
+  }
+
+  if (!user?.id) {
+    throw new Error('Usuario no autenticado');
   }
 
   const event = await Event.create({
     title,
     category: categoryId,
+    categoryName: categoryName || categoryExists.name,
     description,
-    date,
-    time,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    location,
     isActive: payload.isActive ?? true,
+    status: payload.status ?? 'upcoming',
+    createdBy: user.id,
+    createdByName: user.name || '',
+    notify24hBefore: payload.notify24hBefore ?? true,
+    notify1hBefore: payload.notify1hBefore ?? true,
+    notifyAtTime: payload.notifyAtTime ?? true,
   });
 
-  return await Event.findById(event._id).populate('category');
+  return await Event.findById(event._id)
+    .populate('category')
+    .populate('createdBy', 'name email role');
 };
 
-const updateEvent = async (id, payload) => {
+const updateEvent = async (id, payload, user) => {
   const event = await Event.findById(id);
 
   if (!event) {
     throw new Error('Evento no encontrado');
+  }
+
+  const isAdmin = user?.role === 'admin';
+  const isOwner = event.createdBy.toString() === user?.id;
+
+  if (!isAdmin && !isOwner) {
+    throw new Error('No tienes permisos para editar este evento');
   }
 
   if (payload.title != null) {
@@ -78,6 +121,7 @@ const updateEvent = async (id, payload) => {
     }
 
     event.category = payload.category;
+    event.categoryName = payload.categoryName?.trim() || categoryExists.name;
   }
 
   if (payload.description != null) {
@@ -88,44 +132,95 @@ const updateEvent = async (id, payload) => {
     event.description = description;
   }
 
-  if (payload.date != null) {
-    const date = payload.date.trim();
-    if (!date) {
-      throw new Error('La fecha del evento es obligatoria');
+  if (payload.startDate != null) {
+    const startDate = payload.startDate.trim();
+    if (!startDate) {
+      throw new Error('La fecha de inicio es obligatoria');
     }
-    event.date = date;
+    event.startDate = startDate;
   }
 
-  if (payload.time != null) {
-    const time = payload.time.trim();
-    if (!time) {
-      throw new Error('La hora del evento es obligatoria');
+  if (payload.endDate != null) {
+    const endDate = payload.endDate.trim();
+    if (!endDate) {
+      throw new Error('La fecha de fin es obligatoria');
     }
-    event.time = time;
+    event.endDate = endDate;
+  }
+
+  if (payload.startTime != null) {
+    const startTime = payload.startTime.trim();
+    if (!startTime) {
+      throw new Error('La hora de inicio es obligatoria');
+    }
+    event.startTime = startTime;
+  }
+
+  if (payload.endTime != null) {
+    const endTime = payload.endTime.trim();
+    if (!endTime) {
+      throw new Error('La hora de fin es obligatoria');
+    }
+    event.endTime = endTime;
+  }
+
+  if (payload.location != null) {
+    event.location = payload.location.trim();
   }
 
   if (payload.isActive != null) {
     event.isActive = payload.isActive;
   }
 
+  if (payload.status != null) {
+    event.status = payload.status;
+  }
+
+  if (payload.notify24hBefore != null) {
+    event.notify24hBefore = payload.notify24hBefore;
+  }
+
+  if (payload.notify1hBefore != null) {
+    event.notify1hBefore = payload.notify1hBefore;
+  }
+
+  if (payload.notifyAtTime != null) {
+    event.notifyAtTime = payload.notifyAtTime;
+  }
+
   await event.save();
 
-  return await Event.findById(event._id).populate('category');
+  return await Event.findById(event._id)
+    .populate('category')
+    .populate('createdBy', 'name email role');
 };
 
-const deleteEvent = async (id) => {
-  const event = await Event.findByIdAndDelete(id);
+const toggleEventStatus = async (id, isActive, user) => {
+  const event = await Event.findById(id);
 
   if (!event) {
     throw new Error('Evento no encontrado');
   }
 
-  return true;
+  const isAdmin = user?.role === 'admin';
+  const isOwner = event.createdBy.toString() === user?.id;
+
+  if (!isAdmin && !isOwner) {
+    throw new Error('No tienes permisos para cambiar el estado de este evento');
+  }
+
+  event.isActive = isActive;
+  await event.save();
+
+  return await Event.findById(event._id)
+    .populate('category')
+    .populate('createdBy', 'name email role');
 };
 
 module.exports = {
   getEvents,
+  getMyEvents,
   createEvent,
   updateEvent,
-  deleteEvent,
+  toggleEventStatus,
 };
