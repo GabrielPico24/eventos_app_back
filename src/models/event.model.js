@@ -26,34 +26,35 @@ const eventSchema = new mongoose.Schema(
       trim: true,
     },
 
-    startDate: {
+    date: {
       type: String,
       required: true,
       trim: true,
     },
 
-    endDate: {
+    time: {
       type: String,
       required: true,
       trim: true,
     },
 
-    startTime: {
+    repeat: {
       type: String,
-      required: true,
-      trim: true,
-    },
-
-    endTime: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    location: {
-      type: String,
-      default: '',
-      trim: true,
+      enum: [
+        'never',
+        'hourly',
+        'daily',
+        'weekdays',
+        'weekends',
+        'weekly',
+        'biweekly',
+        'monthly',
+        'quarterly',
+        'semiannual',
+        'yearly',
+        'custom',
+      ],
+      default: 'never',
     },
 
     isActive: {

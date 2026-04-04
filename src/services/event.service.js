@@ -16,14 +16,27 @@ const getMyEvents = async (userId) => {
     .sort({ createdAt: -1 });
 };
 
+const allowedRepeats = [
+  'never',
+  'hourly',
+  'daily',
+  'weekdays',
+  'weekends',
+  'weekly',
+  'biweekly',
+  'monthly',
+  'quarterly',
+  'semiannual',
+  'yearly',
+  'custom',
+];
+
 const createEvent = async (payload, user) => {
   const title = payload.title?.trim();
   const description = payload.description?.trim();
-  const startDate = payload.startDate?.trim();
-  const endDate = payload.endDate?.trim();
-  const startTime = payload.startTime?.trim();
-  const endTime = payload.endTime?.trim();
-  const location = payload.location?.trim() || '';
+  const date = payload.date?.trim();
+  const time = payload.time?.trim();
+  const repeat = payload.repeat?.trim() || 'never';
   const categoryId = payload.category;
   const categoryName = payload.categoryName?.trim();
 
@@ -44,20 +57,16 @@ const createEvent = async (payload, user) => {
     throw new Error('La descripción del evento es obligatoria');
   }
 
-  if (!startDate) {
-    throw new Error('La fecha de inicio es obligatoria');
+  if (!date) {
+    throw new Error('La fecha del evento es obligatoria');
   }
 
-  if (!endDate) {
-    throw new Error('La fecha de fin es obligatoria');
+  if (!time) {
+    throw new Error('La hora del evento es obligatoria');
   }
 
-  if (!startTime) {
-    throw new Error('La hora de inicio es obligatoria');
-  }
-
-  if (!endTime) {
-    throw new Error('La hora de fin es obligatoria');
+  if (!allowedRepeats.includes(repeat)) {
+    throw new Error('La opción de repetición no es válida');
   }
 
   if (!user?.id) {
@@ -69,11 +78,9 @@ const createEvent = async (payload, user) => {
     category: categoryId,
     categoryName: categoryName || categoryExists.name,
     description,
-    startDate,
-    endDate,
-    startTime,
-    endTime,
-    location,
+    date,
+    time,
+    repeat,
     isActive: payload.isActive ?? true,
     status: payload.status ?? 'upcoming',
     createdBy: user.id,
@@ -132,40 +139,28 @@ const updateEvent = async (id, payload, user) => {
     event.description = description;
   }
 
-  if (payload.startDate != null) {
-    const startDate = payload.startDate.trim();
-    if (!startDate) {
-      throw new Error('La fecha de inicio es obligatoria');
+  if (payload.date != null) {
+    const date = payload.date.trim();
+    if (!date) {
+      throw new Error('La fecha del evento es obligatoria');
     }
-    event.startDate = startDate;
+    event.date = date;
   }
 
-  if (payload.endDate != null) {
-    const endDate = payload.endDate.trim();
-    if (!endDate) {
-      throw new Error('La fecha de fin es obligatoria');
+  if (payload.time != null) {
+    const time = payload.time.trim();
+    if (!time) {
+      throw new Error('La hora del evento es obligatoria');
     }
-    event.endDate = endDate;
+    event.time = time;
   }
 
-  if (payload.startTime != null) {
-    const startTime = payload.startTime.trim();
-    if (!startTime) {
-      throw new Error('La hora de inicio es obligatoria');
+  if (payload.repeat != null) {
+    const repeat = payload.repeat.trim();
+    if (!allowedRepeats.includes(repeat)) {
+      throw new Error('La opción de repetición no es válida');
     }
-    event.startTime = startTime;
-  }
-
-  if (payload.endTime != null) {
-    const endTime = payload.endTime.trim();
-    if (!endTime) {
-      throw new Error('La hora de fin es obligatoria');
-    }
-    event.endTime = endTime;
-  }
-
-  if (payload.location != null) {
-    event.location = payload.location.trim();
+    event.repeat = repeat;
   }
 
   if (payload.isActive != null) {
