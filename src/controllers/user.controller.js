@@ -3,6 +3,8 @@ const {
   createUser,
   updateUser,
   deleteUser,
+  registerFcmToken,
+  removeFcmToken,
 } = require('../services/user.service');
 
 const listUsers = async (req, res) => {
@@ -104,9 +106,55 @@ const removeUser = async (req, res) => {
   }
 };
 
+const saveMyFcmToken = async (req, res) => {
+  try {
+    console.log('📲 POST /api/users/me/fcm-token');
+    console.log('👤 userId =>', req.user.id);
+    console.log('📦 body =>', req.body);
+
+    const result = await registerFcmToken(req.user.id, req.body);
+
+    return res.json({
+      ok: true,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error('❌ Error registrando FCM token:', error.message);
+
+    return res.status(400).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+};
+
+const deleteMyFcmToken = async (req, res) => {
+  try {
+    console.log('🗑 DELETE /api/users/me/fcm-token');
+    console.log('👤 userId =>', req.user.id);
+    console.log('📦 body =>', req.body);
+
+    const result = await removeFcmToken(req.user.id, req.body.installationId);
+
+    return res.json({
+      ok: true,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error('❌ Error eliminando FCM token:', error.message);
+
+    return res.status(400).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   listUsers,
   createNewUser,
   editUser,
   removeUser,
+  saveMyFcmToken,
+  deleteMyFcmToken,
 };

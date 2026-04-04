@@ -1,5 +1,44 @@
 const mongoose = require('mongoose');
 
+const fcmTokenSchema = new mongoose.Schema(
+  {
+    token: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    installationId: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    platform: {
+      type: String,
+      enum: ['android', 'ios'],
+      required: true,
+    },
+    deviceName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    appVersion: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    lastSeenAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false }
+);
+
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -13,6 +52,10 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    fcmTokens: {
+      type: [fcmTokenSchema],
+      default: [],
     },
   },
   {
