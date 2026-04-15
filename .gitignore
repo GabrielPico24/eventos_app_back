@@ -1,13 +1,4 @@
 # Env
 .env
 .env.*
-
-# Firebase Admin
 src/config/eventos-app-2026g-firebase-adminsdk-fbsvc-234683fcac.json
-
-# Node
-node_modules/
-
-# Mac
-.DS_Store
-src/.DS_Store
