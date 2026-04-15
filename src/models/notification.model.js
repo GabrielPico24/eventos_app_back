@@ -2,8 +2,21 @@ const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    message: { type: String, required: true },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    message: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    category: {
+      type: String,
+      default: 'General',
+      trim: true,
+    },
     type: {
       type: String,
       enum: ['info', 'success', 'warning', 'error'],
@@ -13,6 +26,16 @@ const notificationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       default: null,
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    createdByName: {
+      type: String,
+      required: true,
+      trim: true,
     },
     read: {
       type: Boolean,
