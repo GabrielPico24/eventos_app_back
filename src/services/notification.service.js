@@ -4,8 +4,7 @@ const User = require('../models/user.model');
 const getNotificationsByUser = async (userId) => {
   return await Notification.find({
     $or: [{ userId: null }, { userId }],
-  })
-    .sort({ createdAt: -1 });
+  }).sort({ createdAt: -1 });
 };
 
 const createNotificationsForUsers = async ({
@@ -26,7 +25,7 @@ const createNotificationsForUsers = async ({
       isActive: true,
     }).select('_id name email fcmTokens');
   } else {
-    if (!Array.isArray(userIds) || userIds.length == 0) {
+    if (!Array.isArray(userIds) || userIds.length === 0) {
       throw new Error('Debes seleccionar al menos un usuario');
     }
 
@@ -52,6 +51,8 @@ const createNotificationsForUsers = async ({
     createdBy,
     createdByName,
     read: false,
+    sendStatus: 'pending',
+    sentAt: null,
     metadata: {
       targetUserName: user.name,
       targetUserEmail: user.email,

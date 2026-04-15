@@ -1,8 +1,10 @@
+const Notification = require('../models/notification.model');
 const {
   getNotificationsByUser,
   createNotificationsForUsers,
 } = require('../services/notification.service');
 const { sendPushToUserTokens } = require('../utils/push.util');
+const { emitDashboardStats } = require('../services/dashboard.service');
 
 async function getNotifications(req, res) {
   try {
@@ -51,34 +53,72 @@ async function sendNotification(req, res) {
     });
 
     const io = req.app.get('io') || global.io;
+    const updatedNotifications = [];
 
     for (let i = 0; i < result.notifications.length; i++) {
       const notification = result.notifications[i];
       const user = result.users[i];
 
-      if (io) {
-        io.to(`user:${user._id.toString()}`).emit(
-          'notification:new',
-          notification
-        );
-      }
+      try {
+        await sendPushToUserTokens({
+          user,
+          title: notification.title,
+          body: notification.message,
+          data: {
+            notificationId: notification._id.toString(),
+            category: notification.category || 'General',
+            type: notification.type || 'info',
+          },
+        });
 
-      await sendPushToUserTokens({
-        user,
-        title: notification.title,
-        body: notification.message,
-        data: {
-          notificationId: notification._id.toString(),
-          category: notification.category || 'General',
-          type: notification.type || 'info',
-        },
-      });
+        const updatedNotification = await Notification.findByIdAndUpdate(
+          notification._id,
+          {
+            sendStatus: 'sent',
+            sentAt: new Date(),
+          },
+          { new: true }
+        );
+
+        if (io && updatedNotification) {
+          io.to(`user:${user._id.toString()}`).emit(
+            'notification:new',
+            updatedNotification
+          );
+        }
+
+        updatedNotifications.push(updatedNotification);
+      } catch (pushError) {
+        console.error(
+          `❌ Error enviando notificación ${notification._id} al usuario ${user._id}:`,
+          pushError
+        );
+
+        const failedNotification = await Notification.findByIdAndUpdate(
+          notification._id,
+          {
+            sendStatus: 'failed',
+          },
+          { new: true }
+        );
+
+        if (io && failedNotification) {
+          io.to(`user:${user._id.toString()}`).emit(
+            'notification:new',
+            failedNotification
+          );
+        }
+
+        updatedNotifications.push(failedNotification);
+      }
     }
+
+    await emitDashboardStats(io);
 
     return res.status(201).json({
       ok: true,
-      message: 'Notificación enviada correctamente',
-      data: result.notifications,
+      message: 'Proceso de envío finalizado',
+      data: updatedNotifications,
     });
   } catch (error) {
     console.error('❌ sendNotification error', error);
