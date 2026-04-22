@@ -3,12 +3,28 @@ const Event = require('../models/event.model');
 const Notification = require('../models/notification.model');
 
 async function getAdminDashboardStatsService() {
-  const totalUsers = await User.countDocuments();
+  const now = new Date();
 
-  const totalEvents = await Event.countDocuments({
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  // Solo usuarios normales activos
+  const totalUsers = await User.countDocuments({
+    role: 'user',
     isActive: true,
   });
 
+  // Eventos activos del mes actual
+  // Ajusta "date" si en tu modelo se guarda como Date real o como String
+  const totalEvents = await Event.countDocuments({
+    isActive: true,
+    date: {
+      $gte: startOfMonth,
+      $lt: endOfMonth,
+    },
+  });
+
+  // Avisos pendientes
   const pendingNotifications = await Notification.countDocuments({
     sendStatus: 'pending',
   });

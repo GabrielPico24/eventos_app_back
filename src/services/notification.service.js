@@ -1,9 +1,15 @@
 const Notification = require('../models/notification.model');
 const User = require('../models/user.model');
 
-const getNotificationsByUser = async (userId) => {
+const getNotificationsByUser = async (user) => {
+  if (user.role === 'admin') {
+    return await Notification.find({
+      createdBy: user.id,
+    }).sort({ createdAt: -1 });
+  }
+
   return await Notification.find({
-    $or: [{ userId: null }, { userId }],
+    $or: [{ userId: null }, { userId: user.id }],
   }).sort({ createdAt: -1 });
 };
 

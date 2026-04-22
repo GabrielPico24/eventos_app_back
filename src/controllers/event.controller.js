@@ -7,6 +7,8 @@ const {
   deleteEvent,
 } = require('../services/event.service');
 
+const { emitDashboardStats } = require('../services/dashboard.service');
+
 async function listEvents(req, res) {
   try {
     const events = await getEvents();
@@ -46,6 +48,10 @@ async function createNewEvent(req, res) {
     const io = req.app.get('io') || global.io;
     if (io) {
       io.emit('event:created', event);
+      console.log('📡 Emitido event:created', event._id);
+
+      await emitDashboardStats(io);
+      console.log('📊 Emitido dashboard:stats-updated');
     }
 
     return res.status(201).json({
@@ -68,6 +74,10 @@ async function updateExistingEvent(req, res) {
     const io = req.app.get('io') || global.io;
     if (io) {
       io.emit('event:updated', event);
+      console.log('📡 Emitido event:updated', event._id);
+
+      await emitDashboardStats(io);
+      console.log('📊 Emitido dashboard:stats-updated');
     }
 
     return res.json({
@@ -98,6 +108,10 @@ async function toggleExistingEventStatus(req, res) {
     const io = req.app.get('io') || global.io;
     if (io) {
       io.emit('event:updated', event);
+      console.log('📡 Emitido event:updated', event._id);
+
+      await emitDashboardStats(io);
+      console.log('📊 Emitido dashboard:stats-updated');
     }
 
     return res.json({
@@ -124,6 +138,10 @@ async function removeEvent(req, res) {
     const io = req.app.get('io') || global.io;
     if (io) {
       io.emit('event:deleted', { id: req.params.id });
+      console.log('📡 Emitido event:deleted', req.params.id);
+
+      await emitDashboardStats(io);
+      console.log('📊 Emitido dashboard:stats-updated');
     }
 
     return res.json({

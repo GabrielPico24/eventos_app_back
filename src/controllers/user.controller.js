@@ -7,6 +7,20 @@ const {
   removeFcmToken,
 } = require('../services/user.service');
 
+const { emitDashboardStats } = require('../services/dashboard.service');
+
+const normalizeUserPayload = (user) => {
+  if (!user) return null;
+
+  const plainUser = user.toObject ? user.toObject() : user;
+
+  return {
+    ...plainUser,
+    id: (plainUser._id || plainUser.id || '').toString(),
+    _id: (plainUser._id || plainUser.id || '').toString(),
+  };
+};
+
 const listUsers = async (req, res) => {
   try {
     const users = await getUsers();
@@ -42,16 +56,21 @@ const createNewUser = async (req, res) => {
       isActive,
     });
 
-    const io = req.app.get('io');
+    const userPayload = normalizeUserPayload(user);
+
+    const io = req.app.get('io') || global.io;
     if (io) {
-      io.emit('user:created', user);
-      console.log('📡 Emitido user:created', user._id);
+      io.emit('user:created', userPayload);
+      console.log('📡 Emitido user:created', userPayload.id);
+
+      await emitDashboardStats(io);
+      console.log('📊 Emitido dashboard:stats-updated');
     }
 
     return res.status(201).json({
       ok: true,
       message: 'Usuario creado correctamente',
-      data: user,
+      data: userPayload,
     });
   } catch (error) {
     return res.status(400).json({
@@ -64,17 +83,21 @@ const createNewUser = async (req, res) => {
 const editUser = async (req, res) => {
   try {
     const user = await updateUser(req.params.id, req.body);
+    const userPayload = normalizeUserPayload(user);
 
-    const io = req.app.get('io');
+    const io = req.app.get('io') || global.io;
     if (io) {
-      io.emit('user:updated', user);
-      console.log('📡 Emitido user:updated', user._id);
+      io.emit('user:updated', userPayload);
+      console.log('📡 Emitido user:updated', userPayload.id);
+
+      await emitDashboardStats(io);
+      console.log('📊 Emitido dashboard:stats-updated');
     }
 
     return res.json({
       ok: true,
       message: 'Usuario actualizado correctamente',
-      data: user,
+      data: userPayload,
     });
   } catch (error) {
     return res.status(400).json({
@@ -88,10 +111,13 @@ const removeUser = async (req, res) => {
   try {
     await deleteUser(req.params.id);
 
-    const io = req.app.get('io');
+    const io = req.app.get('io') || global.io;
     if (io) {
       io.emit('user:deleted', { id: req.params.id });
       console.log('📡 Emitido user:deleted', req.params.id);
+
+      await emitDashboardStats(io);
+      console.log('📊 Emitido dashboard:stats-updated');
     }
 
     return res.json({

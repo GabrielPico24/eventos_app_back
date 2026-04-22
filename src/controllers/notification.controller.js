@@ -8,7 +8,7 @@ const { emitDashboardStats } = require('../services/dashboard.service');
 
 async function getNotifications(req, res) {
   try {
-    const notifications = await getNotificationsByUser(req.user.id);
+    const notifications = await getNotificationsByUser(req.user);
 
     return res.json({
       ok: true,
@@ -85,6 +85,11 @@ async function sendNotification(req, res) {
             'notification:new',
             updatedNotification
           );
+
+          io.to('admins').emit(
+            'notification:history-updated',
+            updatedNotification
+          );
         }
 
         updatedNotifications.push(updatedNotification);
@@ -105,6 +110,11 @@ async function sendNotification(req, res) {
         if (io && failedNotification) {
           io.to(`user:${user._id.toString()}`).emit(
             'notification:new',
+            failedNotification
+          );
+
+          io.to('admins').emit(
+            'notification:history-updated',
             failedNotification
           );
         }
