@@ -67,9 +67,13 @@ const eventSchema = new mongoose.Schema(
         'quarterly',
         'semiannual',
         'yearly',
-        'custom',
       ],
       default: 'never',
+    },
+    repeatEndDate: {
+      type: String,
+      default: '',
+      trim: true,
     },
     isActive: {
       type: Boolean,
@@ -90,20 +94,17 @@ const eventSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
-    // NUEVO
     assignedUsers: {
       type: [assignedUserSchema],
       default: [],
     },
-
     notify24hBefore: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     notify1hBefore: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     notifyAtTime: {
       type: Boolean,

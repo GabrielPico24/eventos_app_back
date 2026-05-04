@@ -1,5 +1,9 @@
 const { socketAuth } = require('./socketAuth');
 
+const {
+  getAdminDashboardStatsService,
+} = require('../services/dashboard.service');
+
 function registerSocketHandlers(io) {
   console.log('✅ registerSocketHandlers ejecutado');
 
@@ -23,11 +27,40 @@ function registerSocketHandlers(io) {
 
     if (user.role === 'admin') {
       socket.join('admins');
+      console.log('🛡️ Admin unido a sala admins');
     }
 
     socket.emit('socket:connected', {
       message: 'Conexión socket establecida',
       user,
+    });
+
+    // =====================================================
+    // DASHBOARD ADMIN - CARGA INICIAL POR WEBSOCKET
+    // Flutter emite: dashboard:get-stats
+    // Backend responde: dashboard:stats-updated
+    // =====================================================
+    socket.on('dashboard:get-stats', async () => {
+      try {
+        if (!socket.user || socket.user.role !== 'admin') {
+          socket.emit('dashboard:stats-error', {
+            message: 'No autorizado para consultar dashboard',
+          });
+          return;
+        }
+
+        const stats = await getAdminDashboardStatsService();
+
+        console.log('📊 Dashboard enviado por socket =>', stats);
+
+        socket.emit('dashboard:stats-updated', stats);
+      } catch (error) {
+        console.error('❌ dashboard:get-stats error:', error);
+
+        socket.emit('dashboard:stats-error', {
+          message: 'Error al obtener estadísticas del dashboard',
+        });
+      }
     });
 
     socket.on('notification:read', async (payload) => {

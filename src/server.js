@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const app = require('./app');
 const { PORT, MONGO_URI } = require('./config/env');
 const { registerSocketHandlers } = require('./socket');
+const { startEventReminderJob } = require('./services/event_reminder_job.service');
 
 const httpServer = http.createServer(app);
 
@@ -27,6 +28,7 @@ mongoose.connect(MONGO_URI)
 
     httpServer.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Servidor corriendo en http://0.0.0.0:${PORT}`);
+      startEventReminderJob();
     });
   })
   .catch((error) => {
